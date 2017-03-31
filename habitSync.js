@@ -330,7 +330,7 @@ habitSync.prototype.parseTodoistRepeatingDate = function(dateString) {
 
   var needToParse = dateString.match(/^ev(ery)? [^\d]/i) || dateString === "daily";
 
-  if(dateString.match(/^ev(ery)?!? \d/)) {
+  if(dateString.match(/^ev(ery)?!? \d/i)) {
      repeat = 'interval';
   }
 
