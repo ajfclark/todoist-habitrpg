@@ -90,6 +90,12 @@ habitSync.prototype.findTasksThatNeedUpdating = function(newHistory, oldHistory)
        old.todoist.due_date_utc != item.todoist.due_date_utc ||
        old.todoist.is_deleted != item.todoist.is_deleted ||
        updateLabels) {
+			if(old && old.todoist && old.todoist.due_date_utc != item.todoist.due_date_utc) {
+				item.due_date_changed = true;
+			}
+			else {
+				item.due_date_changed = false;
+			}
       needToUpdate.push(item);
     }
   });
@@ -170,7 +176,14 @@ habitSync.prototype.syncItemsToHabitRpg = function(items, cb) {
           task.attribute = attribute;
         }
 
+				console.error("task\n"+util.inspect(task));
+				console.error("item\n"+util.inspect(item));
+
         if(item.habitrpg && item.habitrpg.id) {
+					if(task.repeat == 'interval' && item.due_date_changed == true) {
+						task.completed = true;
+					}
+
           if(task.type == "todo") {
             // Checks if the complete status has changed
             if((task.completed != item.habitrpg.completed && item.habitrpg.completed !== undefined) ||
@@ -201,6 +214,12 @@ habitSync.prototype.syncItemsToHabitRpg = function(items, cb) {
           habit.updateTask(item.habitrpg.id, task, function(err, res) {
             cb(err, res);
           });
+					if(task.repeat == 'interval' && item.due_date_changed == true) {
+						task.completed = false;
+						habit.createTask(task, function(err, res) {
+						  cb(err, res);
+						});
+					}
         } else {
           if(task.type == "todo" && task.completed) {
             task.dateCompleted = new Date();
@@ -209,6 +228,7 @@ habitSync.prototype.syncItemsToHabitRpg = function(items, cb) {
             cb(err, res);
           });
         }
+
       },
       function(res, cb) {
         history.tasks[item.todoist.id] = {
@@ -310,21 +330,25 @@ habitSync.prototype.parseTodoistRepeatingDate = function(dateString) {
 
   var needToParse = dateString.match(/^ev(ery)? [^\d]/i) || dateString === "daily";
 
+  if(dateString.match(/^ev(ery)?!? \d/)) {
+     repeat = 'interval';
+  }
+
   if(needToParse && noStartDate) {
       type = 'daily';
 
       var everyday = (!!(dateString.match(/^ev(ery)? [^(week)]?(?:day|night)/i)) || dateString === "daily");
-      var weekday = !!(dateString.match(/^ev(ery)? (week)?day/i));
-      var weekend = !!(dateString.match(/^ev(ery)? (week)?end/i));
+      var weekday = !!(dateString.match(/^ev(ery)? weekday/i));
+      var weekend = !!(dateString.match(/^ev(ery)? weekend/i));
 
       repeat = {
-        "su": everyday || weekend || !!(dateString.match(/\bs($| |,|u)/i)),
-        "s":  everyday || weekend || !!(dateString.match(/\bsa($| |,|t)/i)),
-        "f":  everyday || weekday || !!(dateString.match(/\bf($| |,|r)/i)),
-        "th": everyday || weekday || !!(dateString.match(/\bth($| |,|u)/i)),
-        "w":  everyday || weekday || (!!(dateString.match(/\bw($| |,|e)/i)) && !weekend), // Otherwise also matches weekend
-        "t":  everyday || weekday || !!(dateString.match(/\bt($| |,|u)/i)),
-        "m":  everyday || weekday || !!(dateString.match(/\bm($| |,|o)/i))
+        "su": everyday || weekend || !!(dateString.match(/\bsun($| |,|u)/i)),
+        "s":  everyday || weekend || !!(dateString.match(/\bsat($| |,|t)/i)),
+        "f":  everyday || weekday || !!(dateString.match(/\bfri($| |,|r)/i)),
+        "th": everyday || weekday || !!(dateString.match(/\bthu($| |,|u)/i)),
+        "w":  everyday || weekday || !!(dateString.match(/\bwed($| |,|e)/i)),
+        "t":  everyday || weekday || !!(dateString.match(/\btue($| |,|u)/i)),
+        "m":  everyday || weekday || !!(dateString.match(/\bmon($| |,|o)/i))
       };
   }
   return {type: type, repeat: repeat};
