@@ -184,7 +184,7 @@ habitSync.prototype.syncItemsToHabitRpg = function(items, cb) {
 						task.completed = true;
 					}
 
-          if(task.type == "todo") {
+          if(task.type == "todo" || task.type == "interval") {
             // Checks if the complete status has changed
             if((task.completed != item.habitrpg.completed && item.habitrpg.completed !== undefined) ||
               (task.completed === true && item.habitrpg.completed === undefined)) {
