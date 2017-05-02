@@ -176,15 +176,17 @@ habitSync.prototype.syncItemsToHabitRpg = function(items, cb) {
           task.attribute = attribute;
         }
 
-				console.error("task\n"+util.inspect(task));
-				console.error("item\n"+util.inspect(item));
+        console.error("task: " + task.text);
+				//console.error("task\n"+util.inspect(task));
+				//console.error("item\n"+util.inspect(item));
 
         if(item.habitrpg && item.habitrpg.id) {
 					if(task.repeat == 'interval' && item.due_date_changed == true) {
+						console.error("Marked interval task completed = true");
 						task.completed = true;
 					}
 
-          if(task.type == "todo" || task.type == "interval") {
+          if(task.type == "todo" || task.repeat == "interval") {
             // Checks if the complete status has changed
             if((task.completed != item.habitrpg.completed && item.habitrpg.completed !== undefined) ||
               (task.completed === true && item.habitrpg.completed === undefined)) {
@@ -215,6 +217,7 @@ habitSync.prototype.syncItemsToHabitRpg = function(items, cb) {
             cb(err, res);
           });
 					if(task.repeat == 'interval' && item.due_date_changed == true) {
+						console.error("Create new interval task: " + util.inspect(task));
 						task.completed = false;
 						habit.createTask(task, function(err, res) {
 						  cb(err, res);
@@ -330,11 +333,12 @@ habitSync.prototype.parseTodoistRepeatingDate = function(dateString) {
 
   var needToParse = dateString.match(/^ev(ery)? [^\d]/i) || dateString === "daily";
 
-  if(dateString.match(/^ev(ery)?!? \d/i)) {
+  var monthly = (!!(dateString.match(/^ev(ery)? month/i)) || dateString === "monthly");
+
+  if(dateString.match(/^ev(ery)?!? \d/i) || monthly) {
      repeat = 'interval';
   }
-
-  if(needToParse && noStartDate) {
+  else if(needToParse && noStartDate) {
       type = 'daily';
 
       var everyday = (!!(dateString.match(/^ev(ery)? [^(week)]?(?:day|night)/i)) || dateString === "daily");
